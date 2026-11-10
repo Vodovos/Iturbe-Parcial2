@@ -125,8 +125,22 @@ public class PlayerController : MonoBehaviour
     {
         if (projectilePrefab == null || firePoint == null) return;
 
-        // Instancia el proyectil y le transfiere el daño ya escalado
-        GameObject bulletObj = Instantiate(projectilePrefab, firePoint.position, firePoint.rotation);
+        // Calculamos la dirección desde el firePoint hacia el punto del mouse (aimPoint)
+        Vector3 shootDirection = (aimPoint - firePoint.position);
+        shootDirection.y = 0f; // Asegura que viaje plano en el plano horizontal
+
+        Quaternion bulletRotation;
+        if (shootDirection.sqrMagnitude > 0.001f)
+        {
+            bulletRotation = Quaternion.LookRotation(shootDirection);
+        }
+        else
+        {
+            bulletRotation = transform.rotation;
+        }
+
+        // Instancia la bala orientada al cursor
+        GameObject bulletObj = Instantiate(projectilePrefab, firePoint.position, bulletRotation);
 
         if (bulletObj.TryGetComponent<Projectile>(out var projectile))
         {
@@ -157,6 +171,21 @@ public class PlayerController : MonoBehaviour
         rb.linearVelocity = Vector3.zero;
         OnPlayerDied?.Invoke();
         Debug.Log("Jugador derrotado.");
+
+        // Desactiva el collider para que los enemigos no sigan chocando
+        if (TryGetComponent<Collider>(out var col))
+        {
+            col.enabled = false;
+        }
+
+        // Oculta el modelo visual
+        if (TryGetComponent<MeshRenderer>(out var mesh))
+        {
+            mesh.enabled = false;
+        }
+
+        // Si tenés objetos hijos con modelos, podés desactivar el GameObject directamente:
+        // gameObject.SetActive(false);
     }
 
     private void OnCollisionStay(Collision collision)
