@@ -15,6 +15,7 @@ public class GameRoundManager : MonoBehaviour
     [Header("--- Referencias del Juego ---")]
     [SerializeField] private EnemySpawner enemySpawner;
     [SerializeField] private PlayerController player;
+    [SerializeField] private UpgradeSelectionUI upgradeUI;
 
     [Header("--- Mejoras (ScriptableObjects) ---")]
     [SerializeField] private UpgradeData speedUpgrade;
@@ -25,9 +26,7 @@ public class GameRoundManager : MonoBehaviour
     public float TimeRemaining { get; private set; }
     public bool IsRoundActive { get; private set; } = false;
 
-    private bool showUpgradeSelection = false;
-
-    // Eventos para conectar a la UI cuando la diseñes
+    // Eventos para UI externa (reloj, indicadores de ronda, etc.)
     public static event Action<int, float> OnRoundStarted; // (rondaActual, duracionTotal)
     public static event Action OnGameWon;
 
@@ -38,6 +37,9 @@ public class GameRoundManager : MonoBehaviour
 
         if (player == null)
             player = FindFirstObjectByType<PlayerController>();
+
+        if (upgradeUI == null)
+            upgradeUI = FindFirstObjectByType<UpgradeSelectionUI>();
 
         StartRound(0);
     }
@@ -59,7 +61,6 @@ public class GameRoundManager : MonoBehaviour
         CurrentRoundIndex = roundIndex;
         TimeRemaining = roundDurations[CurrentRoundIndex];
         IsRoundActive = true;
-        showUpgradeSelection = false;
 
         // Aseguramos que el tiempo corra
         Time.timeScale = 1f;
@@ -96,9 +97,13 @@ public class GameRoundManager : MonoBehaviour
             return;
         }
 
-        // 4. Pausar el juego y abrir la selección de mejoras
+        // 4. Pausar el juego y abrir el panel de UI con las mejoras
         Time.timeScale = 0f;
-        showUpgradeSelection = true;
+
+        if (upgradeUI != null)
+        {
+            upgradeUI.Open(speedUpgrade, damageUpgrade, healthUpgrade);
+        }
     }
 
     private void ClearAllEnemies()
@@ -110,7 +115,7 @@ public class GameRoundManager : MonoBehaviour
         }
     }
 
-    // Método que llamarán los botones de mejora
+    // Método que ejecuta la tarjeta seleccionada desde la UI
     public void ApplySelectedUpgrade(UpgradeData chosenUpgrade)
     {
         if (chosenUpgrade != null && player != null)
@@ -118,55 +123,7 @@ public class GameRoundManager : MonoBehaviour
             chosenUpgrade.ApplyUpgrade(player);
         }
 
-        showUpgradeSelection = false;
-
-        // 5. Iniciar la siguiente ronda con reloj nuevo
+        // 5. Iniciar la siguiente ronda con el tiempo que le corresponde
         StartRound(CurrentRoundIndex + 1);
-    }
-
-    // -------------------------------------------------------------
-    // INTERFAZ TEMPORAL (Funcional hasta que diseñes el Widget)
-    // -------------------------------------------------------------
-    void OnGUI()
-    {
-        // HUD básico de ronda y tiempo arriba al centro
-        GUIStyle hudStyle = new GUIStyle(GUI.skin.label)
-        {
-            fontSize = 22,
-            alignment = TextAnchor.UpperCenter,
-            fontStyle = FontStyle.Bold
-        };
-
-        if (IsRoundActive)
-        {
-            string hudText = $"Ronda: {CurrentRoundIndex + 1} / {roundDurations.Length} | Tiempo: {Mathf.CeilToInt(TimeRemaining)}s";
-            GUI.Label(new Rect(Screen.width / 2f - 200, 20, 400, 40), hudText, hudStyle);
-        }
-
-        // Ventana modal temporal de selección de mejoras
-        if (showUpgradeSelection)
-        {
-            float boxWidth = 320;
-            float boxHeight = 260;
-            float startX = (Screen.width - boxWidth) / 2f;
-            float startY = (Screen.height - boxHeight) / 2f;
-
-            GUI.Box(new Rect(startX, startY, boxWidth, boxHeight), $"¡Ronda {CurrentRoundIndex + 1} Superada!\nElegí una Mejora (+5%)");
-
-            if (GUI.Button(new Rect(startX + 30, startY + 60, 260, 45), "+5% Velocidad de Movimiento"))
-            {
-                ApplySelectedUpgrade(speedUpgrade);
-            }
-
-            if (GUI.Button(new Rect(startX + 30, startY + 120, 260, 45), "+5% Daño de Disparo"))
-            {
-                ApplySelectedUpgrade(damageUpgrade);
-            }
-
-            if (GUI.Button(new Rect(startX + 30, startY + 180, 260, 45), "+5% Vida Máxima"))
-            {
-                ApplySelectedUpgrade(healthUpgrade);
-            }
-        }
     }
 }
