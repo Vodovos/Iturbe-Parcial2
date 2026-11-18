@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
   upgradeName: Velocidad
   type: 0
-  percentageIncrease: 0.2
+  percentageIncrease: 0.5

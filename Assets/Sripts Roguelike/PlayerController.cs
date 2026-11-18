@@ -23,13 +23,17 @@ public class PlayerController : MonoBehaviour
     public float SpeedMultiplier { get; private set; } = 1f;
     public float DamageMultiplier { get; private set; } = 1f;
     public float HealthMultiplier { get; private set; } = 1f;
+ 
+    public float AttackSpeedMultiplier { get; private set; } = 1f;
 
+   
+   
     // Propiedades públicas para cálculo dinámico
     public float CurrentMaxHealth => baseMaxHealth * HealthMultiplier;
     public float CurrentDamage => baseDamage * DamageMultiplier;
     public float CurrentMoveSpeed => baseMoveSpeed * SpeedMultiplier;
     public float CurrentHealth { get; private set; }
-
+    public float CurrentFireRate => fireRate / AttackSpeedMultiplier;
     // Eventos para UI y sistemas externos
     public static event Action<float, float> OnHealthChanged; // (vidaActual, vidaMaxima)
     public static event Action OnPlayerDied;
@@ -117,7 +121,7 @@ public class PlayerController : MonoBehaviour
         if (Time.time >= nextFireTime)
         {
             Shoot();
-            nextFireTime = Time.time + fireRate;
+            nextFireTime = Time.time + CurrentFireRate;
         }
     }
 
@@ -224,5 +228,9 @@ public class PlayerController : MonoBehaviour
         HealthMultiplier += amount;
         CurrentHealth += baseMaxHealth * amount; // Cura proporcionalmente al ganar vida máxima
         OnHealthChanged?.Invoke(CurrentHealth, CurrentMaxHealth);
+    }
+    public void AddAttackSpeedMultiplier(float amount)
+    {
+        AttackSpeedMultiplier += amount;
     }
 }

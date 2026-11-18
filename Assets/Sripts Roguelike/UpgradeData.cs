@@ -4,7 +4,8 @@ public enum UpgradeType
 {
     MoveSpeed,
     Damage,
-    MaxHealth
+    MaxHealth,
+    AttackSpeed
 }
 
 [CreateAssetMenu(fileName = "NewUpgrade", menuName = "Roguelike/Upgrade Data")]
@@ -33,6 +34,9 @@ public class UpgradeData : ScriptableObject
                 break;
             case UpgradeType.MaxHealth:
                 player.AddHealthMultiplier(percentageIncrease);
+                break;
+            case UpgradeType.AttackSpeed:
+                player.AddAttackSpeedMultiplier(percentageIncrease);
                 break;
         }
     }

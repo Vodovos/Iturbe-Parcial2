@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class GameRoundManager : MonoBehaviour
@@ -17,17 +18,14 @@ public class GameRoundManager : MonoBehaviour
     [SerializeField] private PlayerController player;
     [SerializeField] private UpgradeSelectionUI upgradeUI;
 
-    [Header("--- Mejoras (ScriptableObjects) ---")]
-    [SerializeField] private UpgradeData speedUpgrade;
-    [SerializeField] private UpgradeData damageUpgrade;
-    [SerializeField] private UpgradeData healthUpgrade;
+    [Header("--- Pool de Mejoras (ScriptableObjects) ---")]
+    [SerializeField] private List<UpgradeData> allAvailableUpgrades = new List<UpgradeData>();
 
     public int CurrentRoundIndex { get; private set; } = 0;
     public float TimeRemaining { get; private set; }
     public bool IsRoundActive { get; private set; } = false;
 
-    // Eventos para UI externa (reloj, indicadores de ronda, etc.)
-    public static event Action<int, float> OnRoundStarted; // (rondaActual, duracionTotal)
+    public static event Action<int, float> OnRoundStarted;
     public static event Action OnGameWon;
 
     void Start()
@@ -62,10 +60,8 @@ public class GameRoundManager : MonoBehaviour
         TimeRemaining = roundDurations[CurrentRoundIndex];
         IsRoundActive = true;
 
-        // Aseguramos que el tiempo corra
         Time.timeScale = 1f;
 
-        // Activamos el spawn de enemigos
         if (enemySpawner != null)
         {
             enemySpawner.StartSpawning();
@@ -80,16 +76,13 @@ public class GameRoundManager : MonoBehaviour
         IsRoundActive = false;
         TimeRemaining = 0f;
 
-        // 1. Detener spawner
         if (enemySpawner != null)
         {
             enemySpawner.StopSpawning();
         }
 
-        // 2. Barrer todos los enemigos presentes en la arena
         ClearAllEnemies();
 
-        // 3. Chequear si completó las 10 rondas
         if (CurrentRoundIndex >= roundDurations.Length - 1)
         {
             Debug.Log("¡Victoria! Completaste las 10 rondas.");
@@ -97,13 +90,31 @@ public class GameRoundManager : MonoBehaviour
             return;
         }
 
-        // 4. Pausar el juego y abrir el panel de UI con las mejoras
         Time.timeScale = 0f;
 
         if (upgradeUI != null)
         {
-            upgradeUI.Open(speedUpgrade, damageUpgrade, healthUpgrade);
+            List<UpgradeData> rolledUpgrades = GetRandomUpgrades(3);
+            upgradeUI.Open(rolledUpgrades);
         }
+    }
+
+    private List<UpgradeData> GetRandomUpgrades(int count)
+    {
+        // Copia temporal del pool para ir extrayendo sin repetir
+        List<UpgradeData> poolCopy = new List<UpgradeData>(allAvailableUpgrades);
+        List<UpgradeData> selected = new List<UpgradeData>();
+
+        int picks = Mathf.Min(count, poolCopy.Count);
+
+        for (int i = 0; i < picks; i++)
+        {
+            int randomIndex = UnityEngine.Random.Range(0, poolCopy.Count);
+            selected.Add(poolCopy[randomIndex]);
+            poolCopy.RemoveAt(randomIndex);
+        }
+
+        return selected;
     }
 
     private void ClearAllEnemies()
@@ -115,7 +126,6 @@ public class GameRoundManager : MonoBehaviour
         }
     }
 
-    // Método que ejecuta la tarjeta seleccionada desde la UI
     public void ApplySelectedUpgrade(UpgradeData chosenUpgrade)
     {
         if (chosenUpgrade != null && player != null)
@@ -123,7 +133,6 @@ public class GameRoundManager : MonoBehaviour
             chosenUpgrade.ApplyUpgrade(player);
         }
 
-        // 5. Iniciar la siguiente ronda con el tiempo que le corresponde
         StartRound(CurrentRoundIndex + 1);
     }
 }

@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
   upgradeName: Vida Maxima
   type: 2
-  percentageIncrease: 0.05
+  percentageIncrease: 0.5
