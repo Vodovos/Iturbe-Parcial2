@@ -16,6 +16,9 @@ public class CombatManager : MonoBehaviour
     private bool isDefending = false;
     private OverworldEnemy currentEnemyRef;
 
+    // Control de turnos extra por debilidad (no acumulativo)
+    private bool hasExtraTurn = false;
+
     // Referencias de cámara y movimiento
     private Transform mainCamTransform;
     private Vector3 originalCamPos;
@@ -40,6 +43,7 @@ public class CombatManager : MonoBehaviour
     {
         currentEnemyRef = enemy;
         enemyCurrentHP = enemyMaxHP;
+        hasExtraTurn = false;
 
         // Elegir debilidad aleatoria
         enemyWeakness = (DamageType)Random.Range(0, 3);
@@ -54,20 +58,50 @@ public class CombatManager : MonoBehaviour
             playerMovementScript = playerObj.GetComponent<PlayerMovement>();
             if (playerMovementScript != null) playerMovementScript.enabled = false;
 
-            // Posicionar la cámara en el punto medio entre el jugador y el enemigo
             Vector3 midpoint = (playerObj.transform.position + enemy.transform.position) / 2f;
             mainCamTransform.position = midpoint + new Vector3(0f, 3f, -4f);
             mainCamTransform.LookAt(midpoint + Vector3.up * 1f);
         }
 
         UIManager.Instance.ShowBattleUI(true);
-        currentState = CombatState.PlayerTurn;
+        UpdateUIValues();
+        SetPlayerTurn();
     }
 
-    // --- ACCIÓN GENERAL DEL JUGADOR USANDO SCRIPTABLE OBJECTS ---
+    void SetPlayerTurn()
+    {
+        currentState = CombatState.PlayerTurn;
+        UIManager.Instance.SetTurnIndicator("¡Tu Turno!");
+    }
+
+    void SetEnemyTurn()
+    {
+        currentState = CombatState.EnemyTurn;
+        UIManager.Instance.SetTurnIndicator("Turno Enemigo...");
+        StartCoroutine(EnemyTurnRoutine());
+    }
+
+    void UpdateUIValues()
+    {
+        UIManager.Instance.UpdateHealthBars(GameManager.Instance.currentHP, GameManager.Instance.maxHP, enemyCurrentHP, enemyMaxHP);
+    }
+
+    // --- ACCIÓN DEL JUGADOR CON DELAY ---
     public void ExecuteAction(CombatAction action)
     {
         if (currentState != CombatState.PlayerTurn) return;
+
+        // Ocultar botones temporalmente mientras se ejecuta la acción
+        
+        StartCoroutine(PlayerActionRoutine(action));
+    }
+
+    IEnumerator PlayerActionRoutine(CombatAction action)
+    {
+        // Breve delay de ejecución del ataque
+        yield return new WaitForSeconds(0.4f);
+
+        bool hitWeakness = false;
 
         if (action.isDefense)
         {
@@ -81,6 +115,7 @@ public class CombatManager : MonoBehaviour
             if (action.damageType == enemyWeakness)
             {
                 finalDamage *= 2; // ¡Golpe crítico por debilidad!
+                hitWeakness = true;
                 Debug.Log($"¡Debilidad acertada con {action.actionName}! Haces {finalDamage} de daño.");
             }
             else
@@ -89,22 +124,42 @@ public class CombatManager : MonoBehaviour
             }
 
             enemyCurrentHP -= finalDamage;
+            UpdateUIValues();
 
             if (enemyCurrentHP <= 0)
             {
                 EndCombat(true);
-                return;
+                yield break;
             }
         }
 
-        currentState = CombatState.EnemyTurn;
-        StartCoroutine(EnemyTurnRoutine());
+        // Pausa dramática post-impacto
+        yield return new WaitForSeconds(0.8f);
+
+        // --- MECÁNICA DE DEBILIDAD Y TURNO EXTRA (NO ACUMULATIVO) ---
+        if (hitWeakness && !hasExtraTurn)
+        {
+            hasExtraTurn = true; // Activamos bandera para que no se encadene infinitamente
+            UIManager.Instance.SetTurnIndicator("¡Debilitado! ¡Turno Extra!");
+            Debug.Log("¡El enemigo perdió su turno por debilidad! Ganas un turno extra.");
+
+            yield return new WaitForSeconds(1f);
+
+            UIManager.Instance.ShowBattleUI(true);
+            SetPlayerTurn(); // Repites tu turno de inmediato
+        }
+        else
+        {
+            // Si ya venía de un turno extra o no dio a la debilidad, se resetea y pasa al enemigo
+            hasExtraTurn = false;
+            SetEnemyTurn();
+        }
     }
 
-    // --- TURNO DEL ENEMIGO ---
+    // --- TURNO DEL ENEMIGO CON DELAY ---
     IEnumerator EnemyTurnRoutine()
     {
-        yield return new WaitForSeconds(1.2f);
+        yield return new WaitForSeconds(1.2f); // Delay antes de que el enemigo golpee
 
         int enemyDamage = 15;
 
@@ -115,7 +170,10 @@ public class CombatManager : MonoBehaviour
         }
 
         GameManager.Instance.currentHP -= enemyDamage;
+        UpdateUIValues();
         Debug.Log($"El enemigo te ataca e inflige {enemyDamage} de daño. Te queda {GameManager.Instance.currentHP} HP.");
+
+        yield return new WaitForSeconds(0.8f); // Delay post-ataque del enemigo
 
         if (GameManager.Instance.currentHP <= 0)
         {
@@ -124,7 +182,8 @@ public class CombatManager : MonoBehaviour
             yield break;
         }
 
-        currentState = CombatState.PlayerTurn;
+        UIManager.Instance.ShowBattleUI(true);
+        SetPlayerTurn();
     }
 
     void EndCombat(bool playerWon)

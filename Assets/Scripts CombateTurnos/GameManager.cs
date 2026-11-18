@@ -19,6 +19,7 @@ public class GameManager : MonoBehaviour
         {
             Instance = this;
             currentHP = maxHP;
+            DontDestroyOnLoad(gameObject); // Opcional si usas una sola escena, asegúrate de que no duplique instancias
         }
         else
         {
@@ -31,19 +32,24 @@ public class GameManager : MonoBehaviour
         enemiesDefeatedCount++;
         if (enemiesDefeatedCount >= 2)
         {
-            // Mostrar Widget de Victoria
+            // Pausar el juego o detener corrutinas si es necesario y mostrar victoria
             UIManager.Instance.ShowVictoryScreen();
         }
     }
 
     public void TriggerGameOver()
     {
-        // Mostrar Widget de Derrota
         UIManager.Instance.ShowDefeatScreen();
     }
 
     public void RestartGame()
     {
+        // Restablecer valores estáticos o de instancia si es necesario
+        Time.timeScale = 1f; // Despausar el juego por si acaso
+        currentHP = maxHP;
+        enemiesDefeatedCount = 0;
+
+        // Recargar la escena actual de forma limpia
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }
