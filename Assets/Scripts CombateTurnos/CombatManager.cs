@@ -16,7 +16,7 @@ public class CombatManager : MonoBehaviour
     private bool isDefending = false;
     private OverworldEnemy currentEnemyRef;
 
-    // Referencias para la cámara dinámica
+    // Referencias de cámara y movimiento
     private Transform mainCamTransform;
     private Vector3 originalCamPos;
     private Quaternion originalCamRot;
@@ -45,68 +45,57 @@ public class CombatManager : MonoBehaviour
         enemyWeakness = (DamageType)Random.Range(0, 3);
         Debug.Log($"¡Combate iniciado! El enemigo es débil a: {enemyWeakness}");
 
-        // Guardar la posición de la cámara de exploración actual antes de moverla
         originalCamPos = mainCamTransform.position;
         originalCamRot = mainCamTransform.rotation;
 
-        // Desactivar el script de movimiento del jugador
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj != null)
         {
             playerMovementScript = playerObj.GetComponent<PlayerMovement>();
             if (playerMovementScript != null) playerMovementScript.enabled = false;
 
-            // --- POSICIONAR LA CÁMARA PARA EL COMBATE ---
-            // Colocar la cámara en un punto medio entre el jugador y el enemigo, elevada y de lado
+            // Posicionar la cámara en el punto medio entre el jugador y el enemigo
             Vector3 midpoint = (playerObj.transform.position + enemy.transform.position) / 2f;
             mainCamTransform.position = midpoint + new Vector3(0f, 3f, -4f);
-
-            // Hacer que la cámara mire hacia el punto medio (donde están ambos)
             mainCamTransform.LookAt(midpoint + Vector3.up * 1f);
         }
 
-        // Mostrar UI estilo Pokémon
         UIManager.Instance.ShowBattleUI(true);
-
         currentState = CombatState.PlayerTurn;
     }
 
-    // --- ACCIONES DEL JUGADOR ---
-    public void PlayerAttack(DamageType attackType)
+    // --- ACCIÓN GENERAL DEL JUGADOR USANDO SCRIPTABLE OBJECTS ---
+    public void ExecuteAction(CombatAction action)
     {
         if (currentState != CombatState.PlayerTurn) return;
 
-        int baseDamage = 12;
-        int finalDamage = baseDamage;
-
-        if (attackType == enemyWeakness)
+        if (action.isDefense)
         {
-            finalDamage *= 2; // ¡Golpe crítico por debilidad!
-            Debug.Log($"¡Debilidad acertada! Haces {finalDamage} de daño de {attackType}.");
+            isDefending = true;
+            Debug.Log("Te pones en guardia. El próximo daño se reduce a la mitad.");
         }
         else
         {
-            Debug.Log($"Ataque de {attackType}: {finalDamage} de daño.");
+            int finalDamage = action.baseDamage;
+
+            if (action.damageType == enemyWeakness)
+            {
+                finalDamage *= 2; // ¡Golpe crítico por debilidad!
+                Debug.Log($"¡Debilidad acertada con {action.actionName}! Haces {finalDamage} de daño.");
+            }
+            else
+            {
+                Debug.Log($"Ataque de {action.actionName}: {finalDamage} de daño.");
+            }
+
+            enemyCurrentHP -= finalDamage;
+
+            if (enemyCurrentHP <= 0)
+            {
+                EndCombat(true);
+                return;
+            }
         }
-
-        enemyCurrentHP -= finalDamage;
-
-        if (enemyCurrentHP <= 0)
-        {
-            EndCombat(true);
-            return;
-        }
-
-        currentState = CombatState.EnemyTurn;
-        StartCoroutine(EnemyTurnRoutine());
-    }
-
-    public void PlayerDefend()
-    {
-        if (currentState != CombatState.PlayerTurn) return;
-
-        isDefending = true;
-        Debug.Log("Te pones en guardia. El próximo daño se reduce a la mitad.");
 
         currentState = CombatState.EnemyTurn;
         StartCoroutine(EnemyTurnRoutine());
@@ -143,14 +132,12 @@ public class CombatManager : MonoBehaviour
         currentState = CombatState.Exploration;
         UIManager.Instance.ShowBattleUI(false);
 
-        // Devolver la cámara a su posición y rotación original de exploración
         if (mainCamTransform != null)
         {
             mainCamTransform.position = originalCamPos;
             mainCamTransform.rotation = originalCamRot;
         }
 
-        // Reactivar movimiento del player
         if (playerMovementScript != null)
         {
             playerMovementScript.enabled = true;
