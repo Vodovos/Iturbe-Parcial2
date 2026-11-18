@@ -3679,7 +3679,7 @@ Transform:
   m_GameObject: {fileID: 384128945}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 22.91, y: 1.86, z: 6.07}
+  m_LocalPosition: {x: 22.91, y: 1.86, z: 6.11}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3704,6 +3704,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
   moveSpeed: 5
   rotationSpeed: 10
+--- !u!4 &387329256 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 447032944548932684, guid: 113c8da2b5ab99a41a9a81452407ae0e, type: 3}
+  m_PrefabInstance: {fileID: 2426410578679409400}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &404769522
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5249,7 +5254,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: aa34a9e86e4ba9342b98d40e5cc41f12, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 25.449999
+      value: 25.559
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: aa34a9e86e4ba9342b98d40e5cc41f12, type: 3}
       propertyPath: m_LocalPosition.y
@@ -6506,7 +6511,7 @@ Transform:
   m_GameObject: {fileID: 870730587}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 7.85, y: 1.86, z: 10.095}
+  m_LocalPosition: {x: 7.896, y: 1.86, z: 10.095}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -12197,6 +12202,7 @@ GameObject:
   - component: {fileID: 1555086666}
   - component: {fileID: 1555086665}
   - component: {fileID: 1555086668}
+  - component: {fileID: 1555086669}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -12322,6 +12328,21 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &1555086669
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1555086664}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2aafa1bcb75182a46bf9ba592ef9fdff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraFollow
+  target: {fileID: 387329256}
+  offset: {x: 0, y: 6, z: -6}
+  smoothSpeed: 1
 --- !u!1001 &1558404859
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -15864,7 +15885,7 @@ Transform:
   m_GameObject: {fileID: 1969836584}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 14.889, y: 1.86, z: 6.571}
+  m_LocalPosition: {x: 14.91, y: 1.86, z: 6.6}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -18247,7 +18268,7 @@ Transform:
   m_GameObject: {fileID: 2058069329}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 10.91, y: 1.86, z: 6.08}
+  m_LocalPosition: {x: 10.91, y: 1.86, z: 6.1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
