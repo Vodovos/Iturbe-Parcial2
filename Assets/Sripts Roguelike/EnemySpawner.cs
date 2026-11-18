@@ -3,37 +3,42 @@ using UnityEngine;
 public class EnemySpawner : MonoBehaviour
 {
     [Header("--- Prefabs y Referencias ---")]
-    [Tooltip("Prefab del enemigo con el script SimpleEnemyController")]
     [SerializeField] private GameObject enemyPrefab;
-
-    [Tooltip("Transform del Player para chequear distancias mínimas")]
     [SerializeField] private Transform playerTransform;
 
-    [Header("--- Tiempos de Spawn (Balanceables) ---")]
-    [Tooltip("Intervalo en segundos entre cada aparición")]
-    [SerializeField] private float spawnInterval = 1.5f;
+    [Header("--- Tiempos de Spawn Base (Ronda 1) ---")]
+    [Tooltip("Intervalo inicial en segundos en la Ronda 1")]
+    [SerializeField] private float baseSpawnInterval = 1.5f;
 
-    [Tooltip("Cantidad máxima de enemigos vivos al mismo tiempo")]
-    [SerializeField] private int maxEnemiesAlive = 30;
+    [Tooltip("Cantidad máxima base de enemigos vivos en la Ronda 1")]
+    [SerializeField] private int baseMaxEnemiesAlive = 20;
+
+    [Header("--- Escalada por Oleada (Balanceables) ---")]
+    [Tooltip("Segundos que se restan al intervalo por cada ronda avanzada")]
+    [SerializeField] private float intervalReductionPerRound = 0.12f;
+
+    [Tooltip("Tope mínimo del intervalo de spawn (ej: 0.25s = máx 4 enemigos/seg)")]
+    [SerializeField] private float minSpawnInterval = 0.25f;
+
+    [Tooltip("Enemigos extra permitidos en pantalla por cada ronda")]
+    [SerializeField] private int extraMaxEnemiesPerRound = 5;
 
     [Header("--- Área de Spawn (Límites de la Arena) ---")]
-    [Tooltip("Radio o distancia mínima respecto al player para que no nazcan encima")]
     [SerializeField] private float minDistanceToPlayer = 6f;
-
-    [Tooltip("Límite horizontal (eje X) del mapa")]
     [SerializeField] private float arenaExtentX = 20f;
-
-    [Tooltip("Límite vertical/profundidad (eje Z) del mapa")]
     [SerializeField] private float arenaExtentZ = 20f;
-
-    [Tooltip("Altura en Y donde se instancian los enemigos")]
     [SerializeField] private float spawnHeightY = 0.5f;
 
+    private float currentSpawnInterval;
+    private int currentMaxEnemies;
     private float nextSpawnTime;
-    private bool isSpawningActive = true;
+    private bool isSpawningActive = false;
 
     void Awake()
     {
+        currentSpawnInterval = baseSpawnInterval;
+        currentMaxEnemies = baseMaxEnemiesAlive;
+
         if (playerTransform == null)
         {
             GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
@@ -48,7 +53,6 @@ public class EnemySpawner : MonoBehaviour
     {
         if (!isSpawningActive || enemyPrefab == null) return;
 
-        // Si el jugador murió o fue destruido, detenemos el spawn
         if (playerTransform == null)
         {
             isSpawningActive = false;
@@ -58,17 +62,28 @@ public class EnemySpawner : MonoBehaviour
         if (Time.time >= nextSpawnTime)
         {
             TrySpawnEnemy();
-            nextSpawnTime = Time.time + spawnInterval;
+            nextSpawnTime = Time.time + currentSpawnInterval;
         }
+    }
+
+    // Recibe el índice de ronda (0 = Ronda 1, 9 = Ronda 10) desde GameRoundManager
+    public void SetRoundDifficulty(int roundIndex)
+    {
+        // Reduce el intervalo de spawn sin bajar del mínimo seguro
+        float calculatedInterval = baseSpawnInterval - (roundIndex * intervalReductionPerRound);
+        currentSpawnInterval = Mathf.Max(minSpawnInterval, calculatedInterval);
+
+        // Aumenta el límite de enemigos simultáneos en la arena
+        currentMaxEnemies = baseMaxEnemiesAlive + (roundIndex * extraMaxEnemiesPerRound);
+
+        Debug.Log($"[Spawner] Ronda {roundIndex + 1} -> Intervalo: {currentSpawnInterval:F2}s | Máx Enemigos: {currentMaxEnemies}");
     }
 
     private void TrySpawnEnemy()
     {
-        // Limitar enemigos en pantalla para evitar saturación
         int currentEnemies = FindObjectsByType<SimpleEnemyController>(FindObjectsSortMode.None).Length;
-        if (currentEnemies >= maxEnemiesAlive) return;
+        if (currentEnemies >= currentMaxEnemies) return;
 
-        // Intentar encontrar una posición válida aleatoria lejos del jugador
         Vector3 spawnPos = GetRandomSpawnPosition();
         Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
     }
@@ -80,12 +95,10 @@ public class EnemySpawner : MonoBehaviour
 
         for (int i = 0; i < maxAttempts; i++)
         {
-            // Coordenada aleatoria dentro de los límites de la arena
             float randomX = Random.Range(-arenaExtentX, arenaExtentX);
             float randomZ = Random.Range(-arenaExtentZ, arenaExtentZ);
             candidatePos = new Vector3(randomX, spawnHeightY, randomZ);
 
-            // Verificamos que esté fuera del radio seguro del jugador
             if (playerTransform != null)
             {
                 float distToPlayer = Vector3.Distance(candidatePos, playerTransform.position);
@@ -103,11 +116,15 @@ public class EnemySpawner : MonoBehaviour
         return candidatePos;
     }
 
-    // Métodos para pausar/reanudar el spawn entre rondas o menús
-    public void StartSpawning() => isSpawningActive = true;
+    public void StartSpawning()
+    {
+        isSpawningActive = true;
+        // Resetea el timer para que el primer enemigo aparezca casi al instante al iniciar la ronda
+        nextSpawnTime = Time.time + 0.5f;
+    }
+
     public void StopSpawning() => isSpawningActive = false;
 
-    // Visualización del área de spawn en la vista de Escena
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;

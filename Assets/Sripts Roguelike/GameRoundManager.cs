@@ -64,6 +64,7 @@ public class GameRoundManager : MonoBehaviour
 
         if (enemySpawner != null)
         {
+            enemySpawner.SetRoundDifficulty(CurrentRoundIndex);
             enemySpawner.StartSpawning();
         }
 
@@ -134,5 +135,23 @@ public class GameRoundManager : MonoBehaviour
         }
 
         StartRound(CurrentRoundIndex + 1);
+    }
+    void OnEnable()
+    {
+        PlayerController.OnPlayerDied += HandlePlayerDied;
+    }
+
+    void OnDisable()
+    {
+        PlayerController.OnPlayerDied -= HandlePlayerDied;
+    }
+
+    private void HandlePlayerDied()
+    {
+        IsRoundActive = false;
+        if (enemySpawner != null)
+        {
+            enemySpawner.StopSpawning();
+        }
     }
 }
